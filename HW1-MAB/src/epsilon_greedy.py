@@ -8,19 +8,21 @@ from tools.project_path import *
 
 df_close = pd.read_csv(join(cleaned_data_path, 'US_price.csv'), index_col=0)
 df_close.index = pd.to_datetime(df_close.index)
-df_price = df_close.iloc[:, 0:10]
+df_price = df_close.iloc[:, 0:20]
 df_ret = df_price.pct_change()
 df_ret = df_ret.dropna()
 
 def epsilon_greedy(exploration_rate):
 
+    start_date = '2016-01-01'
+    end_date = '2016-01-31'
     n_arm = len(df_price.columns)
     n_operation = np.zeros(n_arm)
-    n_operation[:] = len(df_ret[('2016-01-01' <= df_ret.index ) & (df_ret.index <= '2016-01-31')])
-    initial_reward_estimate = df_ret[('2016-01-01' <= df_ret.index ) & (df_ret.index <= '2016-01-31')].mean()
+    n_operation[:] = len(df_ret[(start_date <= df_ret.index ) & (df_ret.index <= end_date)])
+    initial_reward_estimate = df_ret[(start_date <= df_ret.index ) & (df_ret.index <= end_date)].mean()
     initial_reward_estimate = np.array(initial_reward_estimate)
 
-    df_bt_ret = df_ret[df_ret.index > '2016-01-31']
+    df_bt_ret = df_ret[df_ret.index > end_date]
     mat_bt_ret = np.array(df_bt_ret)
 
     curr_reward_estimate = initial_reward_estimate
@@ -28,9 +30,9 @@ def epsilon_greedy(exploration_rate):
     best_arm_list = []
     for t in range(len(mat_bt_ret)):
         
-        exploration_flag = np.random.binomial(n=1, p=exploration_rate)
+        exploration_flag = bool(np.random.binomial(n=1, p=exploration_rate))
         # explore
-        if exploration_flag:
+        if exploration_flag is True:
             best_arm = np.random.choice(n_arm)
         # exploit
         else:
@@ -52,12 +54,14 @@ def epsilon_greedy(exploration_rate):
 
     return df_pv, n_operation
 
-df_res = pd.DataFrame(index=df_ret.index)
-for i in range(10):
-    temp, n_operation = epsilon_greedy(exploration_rate=0.1)
-    temp.name = i
-    df_res = df_res.join(temp)
+if __name__ == '__main__':
 
-plt.plot(df_res.dropna())
-plt.show()
+    df_res = pd.DataFrame(index=df_ret.index)
+    for i in range(10):
+        temp, n_operation = epsilon_greedy(exploration_rate=0.1)
+        temp.name = i
+        df_res = df_res.join(temp)
+
+    plt.plot(df_res.dropna())
+    plt.show()
 # %%
