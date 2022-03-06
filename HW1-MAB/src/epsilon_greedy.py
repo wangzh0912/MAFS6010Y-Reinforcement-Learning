@@ -12,19 +12,18 @@ df_price = df_close.iloc[:, 0:10]
 df_ret = df_price.pct_change()
 df_ret = df_ret.dropna()
 
-def epsilon_greedy():
+def epsilon_greedy(exploration_rate):
 
     n_arm = len(df_price.columns)
     n_operation = np.zeros(n_arm)
-    # initial_reward_estimate = df_ret[('2016-01-01' <= df_ret.index ) & (df_ret.index <= '2016-12-31')].mean()
-    # initial_reward_estimate = np.array(initial_reward_estimate)
-    initial_reward_estimate = np.zeros(n_arm)
-    # df_bt_ret = df_ret[df_ret.index > '2016-12-31']
-    df_bt_ret = df_ret.copy()
+    n_operation[:] = len(df_ret[('2016-01-01' <= df_ret.index ) & (df_ret.index <= '2016-01-31')])
+    initial_reward_estimate = df_ret[('2016-01-01' <= df_ret.index ) & (df_ret.index <= '2016-01-31')].mean()
+    initial_reward_estimate = np.array(initial_reward_estimate)
+
+    df_bt_ret = df_ret[df_ret.index > '2016-01-31']
     mat_bt_ret = np.array(df_bt_ret)
 
     curr_reward_estimate = initial_reward_estimate
-    exploration_rate = 0.2
     cum_reward = 1
     best_arm_list = []
     for t in range(len(mat_bt_ret)):
@@ -51,11 +50,11 @@ def epsilon_greedy():
     df_portfolio_ret = (df_weight * df_bt_ret).sum(axis=1)
     df_pv = np.cumprod(1 + df_portfolio_ret)
 
-    return df_pv
+    return df_pv, n_operation
 
 df_res = pd.DataFrame(index=df_ret.index)
 for i in range(10):
-    temp = epsilon_greedy()
+    temp, n_operation = epsilon_greedy(exploration_rate=0.2)
     temp.name = i
     df_res = df_res.join(temp)
 
