@@ -1,6 +1,5 @@
 #%%
 from os.path import join
-import matplotlib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,6 +7,7 @@ plt.style.use('seaborn')
 from tools.project_path import *
 
 df_close = pd.read_csv(join(cleaned_data_path, 'US_price.csv'), index_col=0)
+df_close.index = pd.to_datetime(df_close.index)
 df_price = df_close.iloc[:, 0:10]
 df_ret = df_price.pct_change()
 df_ret = df_ret.dropna()
@@ -54,10 +54,10 @@ def epsilon_greedy(exploration_rate):
 
 df_res = pd.DataFrame(index=df_ret.index)
 for i in range(10):
-    temp, n_operation = epsilon_greedy(exploration_rate=0.2)
+    temp, n_operation = epsilon_greedy(exploration_rate=0.1)
     temp.name = i
     df_res = df_res.join(temp)
 
-plt.plot(df_res.values)
+plt.plot(df_res.dropna())
 plt.show()
 # %%
