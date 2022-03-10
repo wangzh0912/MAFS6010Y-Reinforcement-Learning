@@ -44,6 +44,11 @@ def epsilon_greedy(exploration_rate):
         curr_reward_estimate[best_arm] = (curr_reward_estimate[best_arm] * n_operation[best_arm] + best_arm_reward) / (n_operation[best_arm] + 1)
         n_operation[best_arm] += 1
         cum_reward *= (best_arm_reward + 1)
+    
+    # best arm to choose overall
+    mu_star = np.max(df_bt_ret.mean())
+    regret = (1 + mu_star) ** len(mat_bt_ret) - cum_reward
+    print(regret)
 
     df_weight = pd.DataFrame(index=df_bt_ret.index, columns=df_bt_ret.columns, data=0)
     for t in range(len(df_bt_ret)):
@@ -52,13 +57,13 @@ def epsilon_greedy(exploration_rate):
     df_portfolio_ret = (df_weight * df_bt_ret).sum(axis=1)
     df_pv = np.cumprod(1 + df_portfolio_ret)
 
-    return df_pv, n_operation
+    return df_pv, n_operation, regret
 
 if __name__ == '__main__':
 
     df_res = pd.DataFrame(index=df_ret.index)
     for i in range(10):
-        temp, n_operation = epsilon_greedy(exploration_rate=0.1)
+        temp, n_operation, regret = epsilon_greedy(exploration_rate=0.1)
         temp.name = i
         df_res = df_res.join(temp)
 

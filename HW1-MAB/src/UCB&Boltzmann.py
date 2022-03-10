@@ -108,15 +108,15 @@ plt.show()
 best_c=c_grad[np.argmax(ubc_result)]
 '''
 
-if __name__ == '__main__':
+temp_list = []
+#df_res = pd.DataFrame(index=df_ret.index)
+for i in range(N):
+    temp, n_operation = ucb(mat_bt_ret, 2, n_arm)
+    temp = pd.DataFrame(temp)
+    temp.columns = [i]
+    temp_list.append(temp)
 
-    #df_res = pd.DataFrame(index=df_ret.index)
-    for i in range(N):
-        temp,n_operation = ucb(mat_bt_ret, 2, n_arm)
-        temp=pd.DataFrame(temp)
-        ubc_temp.merge(temp)
-    
-
+ubc_temp = pd.concat(temp_list, axis=1)
 plt.plot(ubc_temp)
 plt.xlabel('time', fontsize=12)
 plt.ylabel('cumulative return', fontsize=12)
