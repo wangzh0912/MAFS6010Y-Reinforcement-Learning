@@ -8,7 +8,7 @@ from tools.project_path import *
 
 df_close = pd.read_csv(join(cleaned_data_path, 'US_price.csv'), index_col=0)
 df_close.index = pd.to_datetime(df_close.index)
-df_price = df_close.iloc[:, 0:4]
+df_price = df_close.iloc[:, 0:20]
 df_ret = df_price.pct_change()
 df_ret = df_ret.dropna()
 n_arm= len(df_price.columns)
@@ -26,6 +26,7 @@ def ucb(mat_bt_ret,c,n_arm):
     curr_reward_estimate = initial_reward_estimate
     cum_reward=1
     n_operation = np.zeros(n_arm)
+    cum_reward_series=[]
 
     for t in range(len(mat_bt_ret)):
 
@@ -39,29 +40,31 @@ def ucb(mat_bt_ret,c,n_arm):
         
                 delta_t = np.sqrt(c * np.log(t + 1)/n_operation[j])
             
-                # 计算UCB值
+                # calculate upper bound
                 upper_bound = curr_reward_estimate[j] + delta_t          
             else:           
-                # 初始化UCB值
-                upper_bound = 10           
+                # initialize upper bound
+                upper_bound = 100           
             if upper_bound > max_upper_bound:
             
-                # 更新UCB值
+                # update max UCB
                 max_upper_bound = upper_bound
             
-                # 选择最佳摇臂
                 best_arm = j
-            
+
+        #find reward of best arm j  
         best_arm_reward= mat_bt_ret[t,best_arm]
+        #update j's estimate
         curr_reward_estimate[best_arm] = (curr_reward_estimate[best_arm] * n_operation[best_arm] + best_arm_reward)/(n_operation[best_arm] + 1)
     
-        # update number of opernation for the current arm
+        # update number of opernation for the current arm j
         n_operation[best_arm] += 1
             
-        # cummulate reward
-        cum_reward*=(1+ best_arm_reward )  
+        # cumulate reward
+        cum_reward*=(1+ best_arm_reward)
+        cum_reward_series.append(cum_reward)
 
-    return cum_reward, curr_reward_estimate,n_operation
+    return  cum_reward_series,n_operation
 
 
 def boltzmann(n_arm,initial_reward_estimate,mat_bt_ret, sigma):
@@ -69,14 +72,14 @@ def boltzmann(n_arm,initial_reward_estimate,mat_bt_ret, sigma):
     curr_reward_estimate = initial_reward_estimate
     cum_reward=1
     
-    for t in range(mat_bt_ret):
+    for t in range(len(mat_bt_ret)):
         
         # probability of arm to be selected based on the current estimated reward and Boltzmann distribution
         reward_prob = np.exp(np.array(curr_reward_estimate)/sigma)/np.exp(np.array(curr_reward_estimate)/sigma).sum()
         
         # select arm based on previous probability distrivution
         best_arm = np.random.choice(n_arm, size=1, p=reward_prob)[0]
-        best_arm_reward = mat_bt_ret(t,best_arm)
+        best_arm_reward = mat_bt_ret[t,best_arm]
   
         curr_reward_estimate[best_arm] = (curr_reward_estimate[best_arm] * n_operation[best_arm] + best_arm_reward)/(n_operation[best_arm] + 1)
         n_operation[best_arm] += 1
@@ -85,11 +88,10 @@ def boltzmann(n_arm,initial_reward_estimate,mat_bt_ret, sigma):
     return cum_reward, curr_reward_estimate, n_operation   
 #%%
 #run simulatioin
-N=10  #number of simulation
-c_grad=np.arange(0,4.5,0.5)
-ubc_result=[]
-sigma_result=[]
-
+N=10  #number of path
+c_grad=np.arange(-4,4.1,0.5)
+ubc_temp=pd.DataFrame(np.zeros(len(mat_bt_ret)))
+'''
 #select best c for UCB
 for i in c_grad:
     temp_result=0
@@ -104,9 +106,24 @@ plt.xlim(0, 1)
 plt.show()
 
 best_c=c_grad[np.argmax(ubc_result)]
+'''
 
+if __name__ == '__main__':
+
+    #df_res = pd.DataFrame(index=df_ret.index)
+    for i in range(N):
+        temp,n_operation = ucb(mat_bt_ret, 2, n_arm)
+        temp=pd.DataFrame(temp)
+        ubc_temp.merge(temp)
+    
+
+plt.plot(ubc_temp)
+plt.xlabel('time', fontsize=12)
+plt.ylabel('cumulative return', fontsize=12)
+plt.show()
+#%%
 #SIGMA OF boltzmann
-sigma_grad=np.arange(0,1.01,50)
+sigma_grad=np.arange(0.01,1.01,0.2)
 for i in sigma_grad:
     temp_result=0
     for j in range(N):
