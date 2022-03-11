@@ -9,9 +9,20 @@ from tools.project_path import *
 df_close = pd.read_csv(join(cleaned_data_path, 'US_price.csv'), index_col=0)
 df_close.index = pd.to_datetime(df_close.index)
 df_price = df_close.iloc[:, 0:20]
+df_price /= df_price.iloc[0]
+for col in df_price.columns:
+    print(col)
+    plt.plot(df_price.index, df_price[col], label=col)
+plt.legend()
+plt.xlabel('time', fontsize=12)
+plt.ylabel('cumulative return', fontsize=12)
+plt.show()
+
 df_ret = df_price.pct_change()
 df_ret = df_ret.dropna()
 plt.plot(df_ret['AAPL'])
+plt.xlabel('time', fontsize=12)
+plt.ylabel('daily return', fontsize=12)
 plt.show()
 # %%
 from statsmodels.tsa.stattools import acf

@@ -117,6 +117,7 @@ for i in range(N):
     temp_list.append(temp)
 
 ubc_temp = pd.concat(temp_list, axis=1)
+ubc_temp.index = df_bt_ret.index
 plt.plot(ubc_temp)
 plt.xlabel('time', fontsize=12)
 plt.ylabel('cumulative return', fontsize=12)
