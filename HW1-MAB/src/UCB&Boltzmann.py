@@ -36,8 +36,7 @@ def ucb(mat_bt_ret,c,n_arm):
             #iterate all arms
         
             if (n_operation[j] > 0):
-                #calculate bound range   
-        
+                #calculate bound range        
                 delta_t = np.sqrt(c * np.log(t + 1)/n_operation[j])
             
                 # calculate upper bound
@@ -64,13 +63,14 @@ def ucb(mat_bt_ret,c,n_arm):
         cum_reward*=(1+ best_arm_reward)
         cum_reward_series.append(cum_reward)
 
-    return  cum_reward_series,n_operation
+    return  cum_reward_series,cum_reward,n_operation
 
 
 def boltzmann(n_arm,initial_reward_estimate,mat_bt_ret, sigma):
     n_operation = np.zeros(n_arm)
     curr_reward_estimate = initial_reward_estimate
     cum_reward=1
+    cum_reward_series=[]
     
     for t in range(len(mat_bt_ret)):
         
@@ -84,72 +84,62 @@ def boltzmann(n_arm,initial_reward_estimate,mat_bt_ret, sigma):
         curr_reward_estimate[best_arm] = (curr_reward_estimate[best_arm] * n_operation[best_arm] + best_arm_reward)/(n_operation[best_arm] + 1)
         n_operation[best_arm] += 1
         cum_reward*=(1+ best_arm_reward)  
+        cum_reward_series.append(cum_reward)
 
-    return cum_reward, curr_reward_estimate, n_operation   
+    return cum_reward_series,cum_reward, n_operation   
 #%%
-#run simulatioin
-N=10  #number of path
-c_grad=np.arange(-4,4.1,0.5)
+#run backtesting for Ucb 
+c=2
 ubc_temp=pd.DataFrame(np.zeros(len(mat_bt_ret)))
-'''
-#select best c for UCB
-for i in c_grad:
-    temp_result=0
-    for j in range(N):
-         temp_result+=(ucb(mat_bt_ret, i, n_arm)[0])
-    ubc_result.append(temp_result/N)
-
-plt.plot(c_grad,ubc_result, c='firebrick')
-plt.xlabel('c', fontsize=12)
-plt.ylabel('total return', fontsize=12)
-plt.xlim(0, 1)
-plt.show()
-
-best_c=c_grad[np.argmax(ubc_result)]
-'''
 
 temp_list = []
-#df_res = pd.DataFrame(index=df_ret.index)
-for i in range(N):
-    temp, n_operation = ucb(mat_bt_ret, 2, n_arm)
-    temp = pd.DataFrame(temp)
-    temp.columns = [i]
-    temp_list.append(temp)
+
+temp, re,n_operation = ucb(mat_bt_ret, c, n_arm)
+temp = pd.DataFrame(temp)
+temp.columns = [i]
+temp_list.append(temp)
 
 ubc_temp = pd.concat(temp_list, axis=1)
 ubc_temp.index = df_bt_ret.index
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6cb1c78cd73453f77e01adc420384f2cb04455b7
 plt.plot(ubc_temp)
 plt.xlabel('time', fontsize=12)
 plt.ylabel('cumulative return', fontsize=12)
 plt.show()
+
+re=6.75-re #6.75 is the best arm(aapl)'s reward
+print(re) #cum_reward
+
 #%%
-#SIGMA OF boltzmann
-sigma_grad=np.arange(0.01,1.01,0.2)
-for i in sigma_grad:
-    temp_result=0
-    for j in range(N):
-         temp_result+=(boltzmann(n_arm, initial_reward_estimate,mat_bt_ret, i)[0])
-    sigma_result.append(temp_result/N)
+#run backtest for boltzmann
+N=100  #number of path
+bol_temp=pd.DataFrame(np.zeros(len(mat_bt_ret)))
+bol_temp.index = df_bt_ret.index
+temp_list = []
+re_bol = []
+sigma=0.05
 
-plt.plot(sigma_grad,sigma_result, c='firebrick')
-plt.xlabel('sigma', fontsize=12)
-plt.ylabel('total return', fontsize=12)
-plt.xlim(0, 1)
+for i in range(N):
+    temp,re, n_operation = boltzmann(n_arm, initial_reward_estimate,mat_bt_ret, sigma)
+    temp = pd.DataFrame(temp)
+    temp.columns = [i]
+    temp_list.append(temp)
+    re_bol.append(re)
+
+bol_temp = pd.concat(temp_list, axis=1)
+bol_temp.index = df_bt_ret.index
+plt.plot(bol_temp)
+plt.xlabel('time', fontsize=12)
+plt.ylabel('cumulative return', fontsize=12)
 plt.show()
+re_bol=np.array(re_bol)
+re_bol[:]=6.75-re_bol[:] #6.75 is the best arm(aapl)'s reward
 
-
-
-
-
-''''
-df_res = pd.DataFrame(index=df_ret.index)
-for i in range(10):
-    temp, n_operation = epsilon_greedy(exploration_rate=0.1
-    temp.name = i
-    df_res = df_res.join(temp)
-
-plt.plot(df_res.dropna())
-plt.show()
-'''
+print(re_bol)
+print(np.std(re_bol))
+print(np.mean(re_bol))
 # %%
 
