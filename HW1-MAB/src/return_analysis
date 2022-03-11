@@ -1,0 +1,25 @@
+#%%
+from os.path import join
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('seaborn')
+from tools.project_path import *
+
+df_close = pd.read_csv(join(cleaned_data_path, 'US_price.csv'), index_col=0)
+df_close.index = pd.to_datetime(df_close.index)
+df_price = df_close.iloc[:, 0:20]
+df_ret = df_price.pct_change()
+df_ret = df_ret.dropna()
+plt.plot(df_ret['AAPL'])
+plt.show()
+# %%
+from statsmodels.tsa.stattools import acf
+from statsmodels.graphics.tsaplots import plot_acf
+plot_acf(df_ret['AAPL'], lags=60, zero=False, auto_ylims=True)
+plt.show()
+
+from statsmodels.tsa.stattools import adfuller
+adfuller(df_ret['AAPL'])
+df_ret.corr()
+# %%
