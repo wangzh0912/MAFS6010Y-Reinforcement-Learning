@@ -101,10 +101,6 @@ temp_list.append(temp)
 
 ubc_temp = pd.concat(temp_list, axis=1)
 ubc_temp.index = df_bt_ret.index
-<<<<<<< HEAD
-=======
-
->>>>>>> 6cb1c78cd73453f77e01adc420384f2cb04455b7
 plt.plot(ubc_temp)
 plt.xlabel('time', fontsize=12)
 plt.ylabel('cumulative return', fontsize=12)
