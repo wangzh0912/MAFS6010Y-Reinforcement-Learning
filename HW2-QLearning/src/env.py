@@ -2,6 +2,7 @@
 import numpy as np
 
 
+#Create stock price series
 class BinomialStock(object):
 
     def __init__(self, S0, rf, u, n_step, hedge_ratio_list) -> None:
