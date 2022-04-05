@@ -1,11 +1,8 @@
-#%%
-
-
 import numpy as np
 
-class QLearningAgent():
+class QLearningAgent(object):
 
-    def __init__(self, n_state, n_action, learning_rate, gamma, exploration_rate):
+    def __init__(self, n_state, n_action, learning_rate, gamma, exploration_rate) -> None:
         self.n_state = n_state
         self.n_action = n_action
         self.learning_rate = learning_rate
@@ -21,12 +18,14 @@ class QLearningAgent():
             action = self.predict(state)
         return action
 
+
     def predict(self, state):
         Q_current = self.mat_Q[state, :]
         Q_max = np.max(Q_current)
         action_list = np.where(Q_current == Q_max)[0]
         action = np.random.choice(action_list)
         return action
+
 
     def q_learning(self, state_curr, action_curr, reward, state_next, terminal):
         Q_old = self.mat_Q[state_curr, action_curr]
@@ -39,4 +38,3 @@ class QLearningAgent():
 agent = QLearningAgent(n_state=300, n_action=3, learning_rate=0.01, gamma=0.9, exploration_rate=0.1)
 agent.action(3)
 
-# %%

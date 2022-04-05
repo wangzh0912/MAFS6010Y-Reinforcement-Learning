@@ -3,14 +3,17 @@ import numpy as np
 
 
 class BinomialStock(object):
-    def __init__(self, S0, rf, u, n_step) -> None:
+
+    def __init__(self, S0, rf, u, n_step, hedge_ratio_list) -> None:
         self.S0 = S0
         self.R = 1 + rf
         self.u = u
         self.d = 1 / u
         self.n_step = n_step
         self.p = (self.R - self.d) / (self.u - self.d)
+        self.hedge_ratio_list = hedge_ratio_list
     
+
     def sample(self, n_episode):
         self.mat_S = np.zeros((self.n_step, n_episode))
         self.mat_S[0] = self.S0
@@ -22,7 +25,3 @@ class BinomialStock(object):
         return self.mat_S
 
 
-model = BinomialStock(50, 0.05, 1.1, 100)
-mat_S = model.sample(10)
-
-# %%
