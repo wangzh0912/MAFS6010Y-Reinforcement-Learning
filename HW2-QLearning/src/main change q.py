@@ -35,24 +35,20 @@ mat_S = env.sample(n_episode)
 for episode in range(n_episode):
     
     S_list = mat_S[:, episode]
-    for t in range(n_days):
-        if t == range(n_days)[-1]:
-            terminal = True
-        else:
-            terminal = False
-        
-        for i in range(len(hedge_ratio_list)) :
-            state = [t, i]
-            action = agent.action(state)
-            hedge_ratio = hedge_ratio_list[action]
-            if terminal:
-                reward = 0
-            else:
-                reward = - np.abs(S_list[t+1] - hedge_ratio * S_list[t+1])
-               
-            next_state = [t+1,action]
-            agent.q_learning(state, action, reward, next_state, terminal)
+    state = [0, 0] #start state
+    t = state[0]   #date    
+
+    while t != n_days - 1:   
+
+        action = agent.action(state)
+        hedge_ratio = hedge_ratio_list[action]
+        reward = - np.abs(S_list[t+1] - hedge_ratio * S_list[t+1]) #nest state reward
+        next_state = [t+1,action]
+        agent.q_learning(state, action, reward, next_state)
+
+        state = next_state
+        t=state[0]
 
 
-print(agent.mat_Q)
+test = agent.mat_Q
 # %%

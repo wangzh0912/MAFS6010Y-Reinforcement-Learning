@@ -64,12 +64,10 @@ class QLearningAgentPosition(object):
         return action
 
     #episode with Q learning
-    def q_learning(self, state_curr, action_curr, reward, state_next, terminal):
+    def q_learning(self, state_curr, action_curr, reward, state_next):
         Q_old = self.mat_Q[state_curr[0], state_curr[1], action_curr]
-        if terminal:
-            Q_new = reward
-        else:
-            Q_new = reward + self.gamma * np.max(self.mat_Q[state_next[0], state_next[1], :])
+
+        Q_new = reward + self.gamma * np.max(self.mat_Q[state_next[0], state_next[1], :])
         self.mat_Q[state_curr[0], state_curr[1], action_curr] += self.learning_rate * (Q_new - Q_old)
 
 
