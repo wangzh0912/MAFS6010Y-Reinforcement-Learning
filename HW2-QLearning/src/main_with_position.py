@@ -2,6 +2,7 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
+plt.style.use('ggplot')
 
 from agent import QLearningAgent, QLearningAgentPosition
 from env import BinomialStock
@@ -90,9 +91,15 @@ def main():
     test_reward = test_episode(agent, env, hedge_ratio_list, n_days, n_episode)
 
     plt.plot(train_reward)
+    plt.title('Total Reward of Training Episodes')
+    plt.xlabel('Episodes')
+    plt.ylabel('Total Reward')
     plt.show()
 
     plt.plot(test_reward)
+    plt.title('Total Reward of Testing Episodes')
+    plt.xlabel('Episodes')
+    plt.ylabel('Total Reward')
     plt.show()
 
 if __name__ == '__main__':
