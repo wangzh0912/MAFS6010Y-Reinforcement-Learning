@@ -63,7 +63,7 @@ class QLearningAgentPosition(object):
         action = np.random.choice(action_list)
         return action
 
-    #episode with Q learning
+    # episode with Q learning
     def q_learning(self, state_curr, action_curr, reward, state_next):
         Q_old = self.mat_Q[state_curr[0], state_curr[1], action_curr]
 
