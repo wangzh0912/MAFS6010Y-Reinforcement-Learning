@@ -10,10 +10,13 @@ class PolicyGradientAgent(object):
         self.gamma = gamma
 
         
-        init_mu = np.zeros((n_step, 3)) + 0.5   # initialize mean as 0.5
-        init_sigma = np.zeros((n_step, 3)) + 1  # initialize std as 1
+        init_mu = np.zeros((n_step, 3))     # initialize mean as 0.5
+        init_sigma = np.zeros((n_step, 3))  # initialize std as 1
         
         self.mat_theta = np.concatenate([init_mu, init_sigma], axis=1)  # mat_theta is (n_step * 6)
+
+    def feature_vec(self, state):
+        return state.copy() / 365
 
 
     def predict(self, state):
@@ -22,7 +25,7 @@ class PolicyGradientAgent(object):
 
         state_idx = state[0]
         state = np.array(state).reshape((3, 1))
-        feature = state.copy()
+        feature = self.feature_vec(state)
         theta_mu = self.mat_theta[state_idx][:3].reshape((3, 1))
         theta_sigma = self.mat_theta[state_idx][3:].reshape((3, 1))
 
@@ -30,6 +33,7 @@ class PolicyGradientAgent(object):
         sigma = np.exp((theta_sigma.T @ feature)[0, 0])
 
         action = np.random.normal(loc=mu, scale=sigma)
+
         if action >= self.action_bound[1]:
             action = self.action_bound[1]
         elif action <= self.action_bound[0]:
@@ -44,7 +48,7 @@ class PolicyGradientAgent(object):
 
         state_idx = state_curr[0]
         state_curr = np.array(state_curr).reshape((3, 1))
-        feature = state_curr.copy()
+        feature = self.feature_vec(state_curr)
         theta_mu = self.mat_theta[state_idx][:3].reshape((3, 1))
         theta_sigma = self.mat_theta[state_idx][3:].reshape((3, 1))
 
@@ -62,4 +66,5 @@ class PolicyGradientAgent(object):
 agent = PolicyGradientAgent(100, [0, 1], 0.1, 0.1)
 agent.learn((1, 20, 3), 0.5, 23)
 
+agent.predict([0, 50, 4])
 # %%
