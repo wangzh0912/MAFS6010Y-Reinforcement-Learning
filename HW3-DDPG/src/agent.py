@@ -27,7 +27,7 @@ class PolicyGradientAgent(object):
         theta_sigma = self.mat_theta[state_idx][3:].reshape((3, 1))
 
         mu = (theta_mu.T @ feature)[0, 0]
-        sigma = (theta_sigma.T @ feature)[0, 0]
+        sigma = np.exp((theta_sigma.T @ feature)[0, 0])
 
         action = np.random.normal(loc=mu, scale=sigma)
         if action >= self.action_bound[1]:
@@ -49,7 +49,7 @@ class PolicyGradientAgent(object):
         theta_sigma = self.mat_theta[state_idx][3:].reshape((3, 1))
 
         mu = (theta_mu.T @ feature)[0, 0]
-        sigma = (theta_sigma.T @ feature)[0, 0]
+        sigma = np.exp((theta_sigma.T @ feature)[0, 0])
 
         gradient_ln_mu = 1 / (sigma**2) * (act_curr - mu) * feature
         gradient_ln_sigma = ((act_curr - mu)**2 / (sigma**2) - 1) * feature
