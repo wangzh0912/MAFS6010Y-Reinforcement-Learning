@@ -34,11 +34,76 @@ class GBMStock(object):
 
 
 
+class BinomialStock(object):
+
+    def __init__(self, S0, rf, sigma, n_step) -> None:
+        self.S0 = S0
+        self.K = S0
+        self.rf = rf
+        self.sigma = sigma
+        dt = 1 / 365
+        self.T = n_step * dt
+        self.u = np.exp(self.sigma * np.sqrt(dt))
+        self.d = 1 / self.u
+        self.R = np.exp(rf * dt)
+        self.n_step = n_step
+        self.p = (self.R - self.d) / (self.u - self.d)
+
+        self.stock_price = np.zeros((self.n_step+1, self.n_step+1))
+        self.option_price = np.zeros((self.n_step+1, self.n_step+1))
+
+        for j in range(self.n_step+1):
+            for i in range(j+1):
+                self.stock_price[i, j] = self.S0 * self.u**(j-i) * self.d**(i)
+
+        # terminal payoff of call option
+        self.option_price[:, self.n_step] = np.maximum(self.stock_price[:, self.n_step] - self.K, 0)
+    
+        for j in reversed(range(self.n_step)):
+            for i in range(j+1):
+                # option value if holds
+                opt_val = (self.p) * self.option_price[i, j+1] + (1-self.p) * self.option_price[i+1, j+1]
+                opt_val = np.exp(- self.rf * dt) * opt_val # discounted by risk-free rate
+                self.option_price[i, j] = opt_val
+
+    def sample(self, n_episode):
+
+        self.mat_S = np.zeros((self.n_step, n_episode))
+        self.mat_V = np.zeros((self.n_step, n_episode))
+
+        for episode in range(n_episode):
+            # we store the S0 and C0, so we need the first element of up-down vector be 1
+            up_down = np.concatenate([[1], np.random.binomial(1, self.p, size=self.n_step)])
+            S_list = []
+            V_list = []
+            i = 0
+            for j in range(self.n_step):
+                if up_down[j]:
+                    S_list.append(self.stock_price[i, j])
+                    V_list.append(self.option_price[i, j])
+                else:
+                    i += 1
+                    S_list.append(self.stock_price[i, j])
+                    V_list.append(self.option_price[i, j])
+            
+            self.mat_S[:, episode] = np.array(S_list)
+            self.mat_V[:, episode] = np.array(V_list)
+        
+        return self.mat_S, self.mat_V
 
     
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     env = GBMStock(50, 0.05, 0.3, 10)
     stock, call = env.sample(100)
-    import matplotlib.pyplot as plt
+    
     plt.plot(stock)
-# %%
+    plt.show()
+
+    env = BinomialStock(50, 0.05, 0.3, 10)
+    stock, call = env.sample(100)
+
+    plt.plot(call)
+    plt.show()
+
+
