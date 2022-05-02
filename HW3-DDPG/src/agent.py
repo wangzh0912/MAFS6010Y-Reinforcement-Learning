@@ -19,7 +19,8 @@ class PolicyGradientAgent(object):
         self.mat_theta = np.concatenate([init_mu, init_sigma], axis=1)  # mat_theta is (n_step * 6)
 
     def feature_vec(self, state):
-        return state
+        return stats.zscore(state)
+        return state / 365
 
 
     def predict(self, state):
