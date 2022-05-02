@@ -14,6 +14,7 @@ def train_episode(agent, env, n_episode):
     mat_S, mat_V = env.sample(n_episode)
     cum_reward = []
     mat_act = np.zeros((n_episode, n_step))
+    mat_theta = np.zeros((n_episode, 6))
     rf = 0.05
     dt = 1 / 365
 
@@ -46,49 +47,53 @@ def train_episode(agent, env, n_episode):
                 state = [t_list[t], S_list[t], V_list[t]]
                 agent.learn(state, act_list[t], reward_total[t])
 
+        agent.fast_to_slow()
+
         cum_reward.append(reward_total[0])
-        mat_act[episode] = act_list
+        mat_act[episode] = act_list.copy()
+        mat_theta[episode] = agent.theta.reshape(6).copy()
+
         if episode/n_episode*100 % 10 == 0:
             print('Finish training %d%% episodes.' % int(episode/n_episode*100))
 
 
-    return cum_reward, mat_act
+    return cum_reward, mat_act, mat_theta
 
 
-# action_bound = [0, 1]
-# learning_rate = 1e-6
-# gamma = 0.9
-# n_days = 15
-# env = GBMStock(30, 0.02, 0.2, n_days)
-# n_step = env.n_step
-
-# agent = PolicyGradientAgent(n_step, action_bound, learning_rate, gamma)
-# n_episode = 10000
-
-# cum_reward, mat_act = train_episode(agent, env, n_episode)
-
-# plt.plot(range(n_episode), cum_reward)
-# plt.show()
-
-# test = agent.mat_theta
-
-
-# Binomial Stock
 action_bound = [0, 1]
-learning_rate = 1e-7
-gamma = 0.9
-n_days = 10
-env = BinomialStock(50, 0.05, 0.3, n_days)
+learning_rate = 1e-08
+gamma = 0.8
+n_days = 6
+env = GBMStock(50, 0.05, 0.3, n_days)
 n_step = env.n_step
 
 agent = PolicyGradientAgent(n_step, action_bound, learning_rate, gamma)
-n_episode = 10000
+n_episode = 20000
 
-np.random.seed(1)
-cum_reward, mat_act = train_episode(agent, env, n_episode)
+cum_reward, mat_act, mat_theta = train_episode(agent, env, n_episode)
 
 plt.plot(range(n_episode), cum_reward)
 plt.show()
 
 test = agent.theta
+
+
+# Binomial Stock
+# action_bound = [0, 1]
+# learning_rate = 1e-8
+# gamma = 0.8
+# n_days = 10
+# env = BinomialStock(50, 0.05, 0.3, n_days)
+# n_step = env.n_step
+
+# agent = PolicyGradientAgent(n_step, action_bound, learning_rate, gamma)
+# n_episode = 10000
+
+# np.random.seed(1)
+# cum_reward, mat_act = train_episode(agent, env, n_episode)
+
+# plt.plot(range(n_episode), cum_reward)
+# plt.show()
+
+# test = agent.theta
 # %%

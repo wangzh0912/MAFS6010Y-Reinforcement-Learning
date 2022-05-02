@@ -14,11 +14,10 @@ class PolicyGradientAgent(object):
         self.num_state = 3
         
         self.theta = np.zeros((2 * self.num_state, 1))
+        self.theta_fast = self.theta.copy()
 
     def feature_vec(self, state):
         return state
-        # return stats.zscore(state)
-        return state / 365
 
 
     def predict(self, state):
@@ -60,12 +59,15 @@ class PolicyGradientAgent(object):
         gradient_ln_sigma = ((act_curr - mu)**2 / (sigma**2) - 1) * feature
         gradient_ln = (np.concatenate([gradient_ln_mu, gradient_ln_sigma])).reshape(2*self.num_state, 1)
 
-        self.theta = self.theta + self.learning_rate * (self.gamma**state_idx) * reward_total * gradient_ln
+        self.theta_fast = self.theta_fast + self.learning_rate * (self.gamma**state_idx) * reward_total * gradient_ln
 
+    def fast_to_slow(self):
+        self.theta = self.theta_fast.copy()
 
 
 agent = PolicyGradientAgent(100, [0, 1], 0.1, 0.1)
-agent.learn((1, 20, 3), 0.5, 23)
-
 agent.predict([0, 50, 4])
+agent.learn((1, 20, 3), 0.5, 23)
+agent.predict([0, 50, 4])
+
 # %%
