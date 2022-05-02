@@ -13,13 +13,11 @@ class PolicyGradientAgent(object):
 
         self.num_state = 3
         
-        init_mu = np.zeros((n_step, self.num_state))     # initialize mean as 0.5
-        init_sigma = np.zeros((n_step, self.num_state))  # initialize std as 1
-        
-        self.mat_theta = np.concatenate([init_mu, init_sigma], axis=1)  # mat_theta is (n_step * 6)
+        self.theta = np.zeros((2 * self.num_state, 1))
 
     def feature_vec(self, state):
-        return stats.zscore(state)
+        return state
+        # return stats.zscore(state)
         return state / 365
 
 
@@ -27,11 +25,10 @@ class PolicyGradientAgent(object):
 
         # state = [time, stock price, call price]
 
-        state_idx = state[0]
         state = np.array(state).reshape((self.num_state, 1))
         feature = self.feature_vec(state)
-        theta_mu = self.mat_theta[state_idx][:self.num_state].reshape((self.num_state, 1))
-        theta_sigma = self.mat_theta[state_idx][self.num_state:].reshape((self.num_state, 1))
+        theta_mu = self.theta[:self.num_state].reshape((self.num_state, 1))
+        theta_sigma = self.theta[self.num_state:].reshape((self.num_state, 1))
 
         mu = (theta_mu.T @ feature)[0, 0]
         sigma = np.exp((theta_sigma.T @ feature)[0, 0])
@@ -53,17 +50,17 @@ class PolicyGradientAgent(object):
         state_idx = state_curr[0]
         state_curr = np.array(state_curr).reshape((self.num_state, 1))
         feature = self.feature_vec(state_curr)
-        theta_mu = self.mat_theta[state_idx][:self.num_state].reshape((self.num_state, 1))
-        theta_sigma = self.mat_theta[state_idx][self.num_state:].reshape((self.num_state, 1))
+        theta_mu = self.theta[:self.num_state].reshape((self.num_state, 1))
+        theta_sigma = self.theta[self.num_state:].reshape((self.num_state, 1))
 
         mu = (theta_mu.T @ feature)[0, 0]
         sigma = np.exp((theta_sigma.T @ feature)[0, 0])
 
         gradient_ln_mu = 1 / (sigma**2) * (act_curr - mu) * feature
         gradient_ln_sigma = ((act_curr - mu)**2 / (sigma**2) - 1) * feature
-        gradient_ln = (np.concatenate([gradient_ln_mu, gradient_ln_sigma])).reshape(1, 2*self.num_state)
+        gradient_ln = (np.concatenate([gradient_ln_mu, gradient_ln_sigma])).reshape(2*self.num_state, 1)
 
-        self.mat_theta[state_idx] = self.mat_theta[state_idx] + self.learning_rate * (self.gamma**state_idx) * reward_total * gradient_ln
+        self.theta = self.theta + self.learning_rate * (self.gamma**state_idx) * reward_total * gradient_ln
 
 
 
