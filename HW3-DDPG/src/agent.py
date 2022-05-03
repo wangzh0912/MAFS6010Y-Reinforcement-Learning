@@ -5,9 +5,8 @@ from scipy import stats
 
 class PolicyGradientAgent(object):
 
-    def __init__(self, n_step, action_bound, learning_rate, gamma) -> None:
+    def __init__(self, n_step, learning_rate, gamma) -> None:
         self.n_step = n_step
-        self.action_bound = action_bound
         self.learning_rate = learning_rate
         self.gamma = gamma
 
@@ -33,11 +32,6 @@ class PolicyGradientAgent(object):
         sigma = np.exp((theta_sigma.T @ feature)[0, 0])
 
         action = np.random.normal(loc=mu, scale=sigma)
-
-        # if action >= self.action_bound[1]:
-        #     action = self.action_bound[1]
-        # elif action <= self.action_bound[0]:
-        #     action = self.action_bound[0]
 
         return action
 
@@ -65,7 +59,7 @@ class PolicyGradientAgent(object):
         self.theta = self.theta_fast.copy()
 
 
-agent = PolicyGradientAgent(100, [0, 1], 0.1, 0.1)
+agent = PolicyGradientAgent(100, 0.1, 0.1)
 agent.predict([0, 50, 4])
 agent.learn((1, 20, 3), 0.5, 23)
 agent.predict([0, 50, 4])
