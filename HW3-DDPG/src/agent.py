@@ -34,10 +34,10 @@ class PolicyGradientAgent(object):
 
         action = np.random.normal(loc=mu, scale=sigma)
 
-        if action >= self.action_bound[1]:
-            action = self.action_bound[1]
-        elif action <= self.action_bound[0]:
-            action = self.action_bound[0]
+        # if action >= self.action_bound[1]:
+        #     action = self.action_bound[1]
+        # elif action <= self.action_bound[0]:
+        #     action = self.action_bound[0]
 
         return action
 
