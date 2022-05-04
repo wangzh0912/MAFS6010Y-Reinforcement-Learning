@@ -1,4 +1,5 @@
 #%%
+from matplotlib.pyplot import axis
 import torch
 import torch.nn as nn
 
@@ -29,12 +30,13 @@ class CriticNetwork(nn.Module):
         self.fc_state.weight.data.normal_(0, 0.1) # initialization
         self.fc_act = nn.Linear(act_dim, 10)
         self.fc_act.weight.data.normal_(0, 0.1) # initialization
-        self.out = nn.Linear(10, 1)
+        self.out = nn.Linear(20, 1)
         self.out.weight.data.normal_(0, 0.1)  # initialization
     def forward(self, state, act):
         s = self.fc_state(state)
         a = self.fc_act(act)
-        state_action_pair = s + a # torch.cat((s, a))
+        state_action_pair = torch.cat((s, a), dim=1)
+        # print(s.shape, a.shape, state_action_pair.shape)
         state_action_pair = nn.functional.relu(state_action_pair)
         Q_val = self.out(state_action_pair)
         return Q_val
