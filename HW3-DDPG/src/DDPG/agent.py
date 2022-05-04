@@ -1,67 +1,109 @@
 #%%
 import numpy as np
-from scipy import stats
-
+import torch
+from model import ActorNetwork, CriticNetwork
 
 class DDPG(object):
 
-    def __init__(self, n_step, learning_rate, gamma) -> None:
-        self.n_step = n_step
-        self.learning_rate = learning_rate
-        self.gamma = gamma
-
-        self.num_state = 3
+    def __init__(self, state_dim, act_dim, hyper_params):
         
-        self.theta = np.zeros((2 * self.num_state, 1))
-        self.theta_fast = self.theta.copy()
+        self.state_dim, self.act_dim, self.hyper_params = state_dim, act_dim, hyper_params
 
-    def feature_vec(self, state):
-        return state
+        # store (St, At, St+1, Rt), so the number of columns is (state_dim * 2 + act_dim + 1)
+        self.replay_memory = np.zeros((hyper_params['memory_size'], state_dim * 2 + act_dim + 1), dtype=np.float32)
 
+        self.pointer = 0
+
+        # initialize learning network
+        self.actor_learn = ActorNetwork(state_dim, act_dim)
+        self.critic_learn = CriticNetwork(state_dim, act_dim)
+
+        # initialize target network
+        self.actor_target = ActorNetwork(state_dim, act_dim)
+        self.critic_target = CriticNetwork(state_dim, act_dim)
+
+        # set optimizer 
+        self.actor_optim = torch.optim.Adam(self.actor_learn.parameters(),lr=hyper_params['lr_actor'])
+        self.critic_optim = torch.optim.Adam(self.critic_learn.parameters(),lr=hyper_params['lr_critic'])
+        
+        # set TD loss function
+        self.loss_TD = torch.nn.MSELoss()
 
     def predict(self, state):
-
-        # state = [time, stock price, call price]
-
-        state = np.array(state).reshape((self.num_state, 1))
-        feature = self.feature_vec(state)
-        theta_mu = self.theta[:self.num_state].reshape((self.num_state, 1))
-        theta_sigma = self.theta[self.num_state:].reshape((self.num_state, 1))
-
-        mu = (theta_mu.T @ feature)[0, 0]
-        sigma = np.exp((theta_sigma.T @ feature)[0, 0])
-
-        action = np.random.normal(loc=mu, scale=sigma)
-
+        state = torch.unsqueeze(torch.FloatTensor(state), 0)  # vector of 1 * state_dim
+        action = self.actor_learn(state)[0].detach()
         return action
 
+        # torch.unsqueeze: Returns a new tensor with a dimension of size one inserted at the specified position.
+        # Eg. state = [1, 2]
+        # torch.unsqueeze(torch.FloatTensor(state), 0) = [[1, 2]]
+        # self.actor_learn(state) = tensor([[0.0657]], grad_fn=<TanhBackward0>)
+        # self.actor_learn(state)[0] = tensor([0.0657], grad_fn=<TanhBackward0>)
+        # self.actor_learn(state)[0].detach() = tensor([0.0657])
 
-    def learn(self, state_curr, act_curr, reward_total):
+    def learn(self):
 
-        # state = [time, stock price, call price]
+        # 1. Soft target replacement
+        # theta_target = tau * theta_learn + (1-tau) * theta_target
 
-        state_idx = state_curr[0]
-        state_curr = np.array(state_curr).reshape((self.num_state, 1))
-        feature = self.feature_vec(state_curr)
-        theta_mu = self.theta[:self.num_state].reshape((self.num_state, 1))
-        theta_sigma = self.theta[self.num_state:].reshape((self.num_state, 1))
+        tau = self.hyper_params['replacement_rate']
+        for x in self.actor_target.state_dict().keys():
+            eval('self.actor_target.' + x + '.data.mul_((1-tau))')
+            eval('self.actor_target.' + x + '.data.add_(tau * self.actor_learn.' + x + '.data)')
+        for x in self.critic_target.state_dict().keys():
+            eval('self.critic_target.' + x + '.data.mul_((1-tau))')
+            eval('self.critic_target.' + x + '.data.add_(tau * self.critic_learn.' + x + '.data)')
 
-        mu = (theta_mu.T @ feature)[0, 0]
-        sigma = np.exp((theta_sigma.T @ feature)[0, 0])
+        # 2. Draw traning data from replay memory
 
-        gradient_ln_mu = 1 / (sigma**2) * (act_curr - mu) * feature
-        gradient_ln_sigma = ((act_curr - mu)**2 / (sigma**2) - 1) * feature
-        gradient_ln = (np.concatenate([gradient_ln_mu, gradient_ln_sigma])).reshape(2*self.num_state, 1)
+        indices = np.random.choice(self.hyper_params['memory_size'], size=self.hyper_params['batch_size'])
+        batch = self.replay_memory[indices, :]
+        batch_state = torch.FloatTensor(batch[:, :self.state_dim])
+        batch_act = torch.FloatTensor(batch[:, self.state_dim: self.state_dim + self.act_dim])
+        batch_reward = torch.FloatTensor(batch[:, -self.state_dim - 1: -self.state_dim])
+        batch_state_next = torch.FloatTensor(batch[:, -self.state_dim:])
 
-        self.theta_fast = self.theta_fast + self.learning_rate * (self.gamma**state_idx) * reward_total * gradient_ln
+        # 3. Train actor network
 
-    def fast_to_slow(self):
-        self.theta = self.theta_fast.copy()
+        act = self.actor_learn(batch_state)
+        Q_val = self.critic_learn(batch_state, act)
+
+        # note that we want to maximize the Q-value of the action, so loss = - Q
+        loss_action = -torch.mean(Q_val) 
+        self.actor_optim.zero_grad()  # initialize gradient
+        loss_action.backward()        # backward propagation
+        self.actor_optim.step()       # update all parameters
+
+        # 4. The critic score of current action
+
+        Q_learn = self.critic_learn(batch_state, batch_act)
+
+        # 5. Estimate target Q-value: Q_target = Rt + gamma * Qt+1
+
+        act_next = self.actor_target(batch_state_next)
+        Q_val_next = self.critic_target(batch_state_next, act_next)
+        Q_target = batch_reward + self.hyper_params['discount_rate'] * Q_val_next 
+
+        # 6. Train critic network
+
+        error_TD = self.loss_TD(Q_target, Q_learn)
+        self.critic_optim.zero_grad()
+        error_TD.backward()
+        self.critic_optim.step()
+
+    def store_memory(self, state, act, reward, state_next):
+
+        data = np.hstack((state, act, [reward], state_next))
+        
+        # replace the old memory with new memory
+        # if pointer > memory size, store from the begining
+        index = self.pointer % self.hyper_params['memory_size']  
+        
+        self.replay_memory[index, :] = data
+        self.pointer += 1
 
 
-agent = PolicyGradientAgent(100, 0.1, 0.1)
-agent.predict([0, 50, 4])
-agent.learn((1, 20, 3), 0.5, 23)
-agent.predict([0, 50, 4])
+
+
 
 # %%
