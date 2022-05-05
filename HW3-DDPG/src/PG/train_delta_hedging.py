@@ -6,12 +6,12 @@ plt.style.use('ggplot')
 
 from env import GBMStock
 
-n_days = 90
+n_days = 20
 env = GBMStock(50, 0.05, 0.3, n_days)
 n_step = env.n_step
 n_test_episode = 10000
 
-np.random.seed(1)
+# np.random.seed(1)
 
 n_episode = n_test_episode
 mat_S, mat_V = env.sample(n_episode)
@@ -42,10 +42,11 @@ for episode in range(n_episode):
 
     for t in t_list:
         if t > 0:
-            # reward_list[t] = -np.abs(V_list[t] - delta_list[t-1] * S_list[t])
-            reward_list[t] = -np.abs((V_list[t]- V_list[t-1]) - delta_list[t-1] * (S_list[t]-S_list[t-1]))
+            reward_list[t] = -np.abs(V_list[t] - delta_list[t-1] * S_list[t])
+            # reward_list[t] = -np.abs((V_list[t]- V_list[t-1]) - delta_list[t-1] * (S_list[t]-S_list[t-1]))
 
     reward_total = np.zeros(n_step)
+    # gamma = 1
     for t in t_list[::-1]:
         if t < n_step-1:
             reward_total[t] = reward_list[t+1] + gamma * reward_total[t+1]
@@ -60,9 +61,9 @@ for episode in range(n_episode):
 plt.figure(figsize=(8, 8))
 
 plt.plot(range(n_test_episode), cum_reward)
-plt.title('Testing with Reward -abs(dV - action * dS)')
+plt.title('Testing with Reward -abs(V - action * S)')
 plt.ylabel('Discounted Total Reward')
-plt.ylim((-11, 0))
+plt.ylim((-550, 0))
 plt.xlabel('Episodes')
 plt.show()
 print(np.mean(cum_reward), np.std(cum_reward))

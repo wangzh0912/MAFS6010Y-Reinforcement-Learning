@@ -101,7 +101,7 @@ def test_episode(agent, env, n_episode):
 np.random.seed(1)
 learning_rate = 1e-09
 gamma = 0.9
-n_days = 90
+n_days = 20
 env = GBMStock(50, 0.05, 0.3, n_days)
 # env = BinomialStock(50, 0.05, 0.3, n_days)
 n_step = env.n_step
@@ -118,14 +118,14 @@ plt.subplot(1, 2, 1)
 plt.plot(range(n_train_episode), train_reward)
 plt.title('Training with Reward -abs(V - action * S)')
 plt.ylabel('Discounted Total Reward')
-plt.ylim((-650, 0))
+plt.ylim((-550, 0))
 plt.xlabel('Episodes')
 
 plt.subplot(1, 2, 2)
 plt.plot(range(n_test_episode), test_reward)
 plt.title('Testing with Reward -abs(V - action * S)')
 plt.ylabel('Discounted Total Reward')
-plt.ylim((-650, 0))
+plt.ylim((-550, 0))
 plt.xlabel('Episodes')
 plt.show()
 print(np.mean(test_reward), np.std(test_reward))
